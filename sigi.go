@@ -4,12 +4,26 @@ import (
 	"log"
 	"reflect"
 	"runtime/debug"
+	"sync"
+)
+
+var (
+	handlers map[string][]Handler = map[string][]Handler{}
+
+	mutex sync.Mutex
 )
 
 type Handler interface{}
 
 // Connect signal with handler
 func Connect(signal string, handler Handler) {
+	if kind := reflect.TypeOf(handler).Kind(); kind != reflect.Func {
+		log.Printf("Handler type is '%s' must be func", kind)
+		return
+	}
+
+	mutex.Lock()
+	defer mutex.Unlock()
 	if _, exists := handlers[signal]; exists {
 		handlers[signal] = append(handlers[signal], handler)
 	} else {
@@ -19,6 +33,8 @@ func Connect(signal string, handler Handler) {
 
 // Disconnect signal from handler
 func Disconnect(signal string, handler Handler) {
+	mutex.Lock()
+	defer mutex.Unlock()
 	if signalHandlers, exists := handlers[signal]; exists {
 		handlerValue := reflect.ValueOf(handler)
 		for i := range signalHandlers {
@@ -39,11 +55,6 @@ func Emit(signal string, args ...interface{}) {
 	}
 
 	for _, handler := range signalHandlers {
-		if kind := reflect.TypeOf(handler).Kind(); kind != reflect.Func {
-			log.Printf("Handler type is '%s' must be func", kind)
-			continue
-		}
-
 		callHandler(handler, args...)
 	}
 }
@@ -63,5 +74,3 @@ func callHandler(handler Handler, args ...interface{}) {
 
 	reflect.ValueOf(handler).Call(in)
 }
-
-var handlers map[string][]Handler = map[string][]Handler{}
