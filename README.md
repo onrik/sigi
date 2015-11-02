@@ -6,7 +6,6 @@ package main
 
 import (
     "github.com/onrik/sigi"
-	"net/http"
 )
 
 func CountHandler(count int) {
