@@ -10,7 +10,7 @@ import (
 var (
 	handlers map[string][]Handler = map[string][]Handler{}
 
-	mutex sync.Mutex
+	mutex sync.RWMutex
 )
 
 type Handler interface{}
@@ -48,6 +48,8 @@ func Disconnect(signal string, handler Handler) {
 
 // Emit signal
 func Emit(signal string, args ...interface{}) {
+	mutex.RLock()
+	defer mutex.RUnlock()
 	signalHandlers, exists := handlers[signal]
 	if !exists {
 		log.Printf("No handlers for signal '%s'\n", signal)
