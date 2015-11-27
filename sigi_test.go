@@ -33,7 +33,10 @@ func isHandlerConnected(signal string, handler Handler) bool {
 
 func TestConnect(t *testing.T) {
 	signal := "signal1"
-	Connect(signal, testHandler1)
+	_, err := Connect(signal, testHandler1)
+	if err != nil {
+		t.Error("Connect error", err.Error())
+	}
 
 	if !isHandlerConnected(signal, testHandler1) {
 		t.Error("Handler not connected")
@@ -42,8 +45,15 @@ func TestConnect(t *testing.T) {
 
 func TestDisconnect(t *testing.T) {
 	signal := "signal2"
-	Connect(signal, testHandler1)
-	Connect(signal, testHandler2)
+	_, err := Connect(signal, testHandler1)
+	if err != nil {
+		t.Error("Connect error", err.Error())
+	}
+
+	_, err = Connect(signal, testHandler2)
+	if err != nil {
+		t.Error("Connect error", err.Error())
+	}
 
 	Disconnect(signal, testHandler2)
 
@@ -56,6 +66,24 @@ func TestDisconnect(t *testing.T) {
 	}
 }
 
+func TestDisconnectAnonymous(t *testing.T) {
+	signal := "signal4"
+	connector, err := Connect(signal, func() {})
+	if err != nil {
+		t.Error("Connect error", err.Error())
+	}
+
+	if !isHandlerConnected(signal, connector.handler) {
+		t.Error("Handler is not conneted")
+	}
+
+	connector.Disconnect()
+
+	if isHandlerConnected(signal, connector.handler) {
+		t.Error("Handler wasn't disconneted")
+	}
+}
+
 func TestEmit(t *testing.T) {
 	signal := "signal3"
 	Connect(signal, testHandler1)
@@ -63,5 +91,16 @@ func TestEmit(t *testing.T) {
 
 	if testCount != 2 {
 		t.Error("Handler wasn't called")
+	}
+}
+
+func TestConnectError(t *testing.T) {
+	connector, err := Connect("signal5", 22)
+	if err == nil {
+		t.Error("Check handler type error", err.Error())
+	}
+
+	if connector != nil {
+		t.Error("Connector is not nil", connector)
 	}
 }

@@ -1,6 +1,7 @@
 package sigi
 
 import (
+	"fmt"
 	"log"
 	"reflect"
 	"runtime/debug"
@@ -15,11 +16,19 @@ var (
 
 type Handler interface{}
 
+type Connector struct {
+	signal  string
+	handler Handler
+}
+
+func (c *Connector) Disconnect() {
+	Disconnect(c.signal, c.handler)
+}
+
 // Connect signal with handler
-func Connect(signal string, handler Handler) {
+func Connect(signal string, handler Handler) (*Connector, error) {
 	if kind := reflect.TypeOf(handler).Kind(); kind != reflect.Func {
-		log.Printf("Handler type is '%s' must be func", kind)
-		return
+		return nil, fmt.Errorf("Handler type is '%s' must be func", kind)
 	}
 
 	mutex.Lock()
@@ -29,6 +38,8 @@ func Connect(signal string, handler Handler) {
 	} else {
 		handlers[signal] = []Handler{handler}
 	}
+
+	return &Connector{signal, handler}, nil
 }
 
 // Disconnect signal from handler
