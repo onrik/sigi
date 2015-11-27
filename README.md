@@ -20,6 +20,13 @@ func main() {
 	sigi.Emit("count-changed", 2)
 
 	sigi.Disconnect("count-changed", CountHandler)
+	
+	// Now to disconnect anonymous handler
+	connector, err := sigi.Connect("count-changed", func(count int) {
+	    // ...
+	})
+	
+	connector.Disconnect()
 }
 
 
